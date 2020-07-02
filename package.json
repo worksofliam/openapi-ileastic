@@ -1,0 +1,18 @@
+{
+  "name": "openapi-ileastic",
+  "version": "1.0.0",
+  "description": "Tool to generate RPGLE based on OpenAPI",
+  "main": "index.js",
+  "dependencies": {
+    "js-yaml": "^3.14.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "rpgle"
+  ],
+  "author": "Works Of Barry",
+  "license": "MIT"
+}
