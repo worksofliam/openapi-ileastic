@@ -46,7 +46,7 @@ module.exports = class Base {
         `  Else;`,
         `    response.status = 500;`,
         `    json_SetStr(lResponse:'message':'Invalid request');`,
-        `    il_responseWrite(response: json_AsText(lResponse));`
+        `    il_responseWrite(response: json_AsText(lResponse));`,
         `  Endif;`,
         ``,
         `  JSON_NodeDelete(lResponse);`,
