@@ -357,7 +357,7 @@ function getIntos(object, structName) {
         );
 
         if (currentProperty.items.type === "object") {
-          getIntos(currentProperty.items, `${structName}.${name}`);
+          getIntos(currentProperty.items, `${structName}.${name}(list.count)`);
         } else {
           intoStructsContent.push(`    ${structName}.${name}(list.count) = JSON_${getTypes[currentProperty.items.type]}(list.this);`);
         }
@@ -419,7 +419,7 @@ function getOutOfs(object, structName) {
         );
 
         if (currentProperty.items.type === "object") {
-          getOutOfs(currentProperty.items, `${structName}.${name}`);
+          getOutOfs(currentProperty.items, `${structName}.${name}(lIndex)`);
         } else {
           outofStructsContent.push(`    JSON_${setTypes[currentProperty.items.type]}(${structName}.${name}:'[]':${structName}.${name});`);
         }
