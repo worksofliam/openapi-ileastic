@@ -67,7 +67,7 @@ module.exports = class From {
             lines.push(
               ``,
               `  For lIndex = 1 to ${structName}.${name}_len;`,
-              `    JSON_${setTypes[currentProperty.items.type]}(${variable}:'${name}[]':${structName}.${name});`,
+              `    JSON_${setTypes[currentProperty.items.type]}(${variable}:'${name}[]':${structName}.${name}(lIndex));`,
               `  Endfor;`
             );
           }
