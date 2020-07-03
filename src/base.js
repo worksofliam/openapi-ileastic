@@ -8,7 +8,7 @@ module.exports = class Base {
       `ctl-opt decEdit('0,') datEdit(*YMD.) main(main);`,
       `ctl-opt debug(*yes) bndDir('ILEASTIC':'NOXDB');`,
       `ctl-opt thread(*CONCURRENT);`, '',
-      `/include ./headers/ileastic.rpgle`, `/include ./noxdb/headers/jsonParser.rpgle`, '',
+      `/include ./headers/ileastic.rpgle`, `/include ./noxdb/headers/jsonParser.rpgle`, `/copy ./structs.rpgle`, '',
       `dcl-proc main;`, ``,
       `  dcl-ds config likeds(il_config);`,
       `  config.port = 8129;`,
@@ -52,7 +52,7 @@ module.exports = class Base {
       );
     }
   
-    lines.push(`/copy ./validation.rpgle`)
+    lines.push(`/copy ./validation.rpgle`, `/copy ./into.rpgle`, `/copy ./from.rpgle`);
   
     fs.writeFileSync(`output/webapp.rpgle`, lines.join('\n'));
   }
