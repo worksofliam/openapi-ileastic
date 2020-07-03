@@ -20,7 +20,7 @@ paths:
                 name:
                   type: string
                 age:
-                  type: number
+                  type: integer
                 list:
                   type: array
                   items:
@@ -32,13 +32,21 @@ paths:
                   properties:
                     thingy:
                       type: string
+                datalist:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      efg:
+                        type: number
+                      abd:
+                        type: string
               required:
                 - name
                 - age
                 - list
                 - data
         description: ''
-      parameters: []
   /user:
     get:
       summary: Your GET endpoint

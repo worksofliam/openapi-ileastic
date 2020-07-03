@@ -6,15 +6,18 @@ const Route = require('./route');
 const openapiDocument = process.argv[2] || "openapi.yaml"
 const outputFile = process.argv[3] || "output/validation.rpgle";
 const baseFile = process.argv[4] || "output/webapp.rpgle";
+const structsFile = process.argv[5] || "output/structs.rpgle"
 
 var document;
 
 var routes = [];
+var structsContent = [`**FREE`, ''];
 
 loadDocument();
 processDocument();
 writeFile();
 generateBase();
+generateStructs();
 
 function loadDocument() {
   try {
@@ -75,6 +78,7 @@ function processDocument() {
 
       if (currentAPI.requestBody) {
         currentBody = currentAPI.requestBody.content['application/json'].schema;
+        generateStruct(currentBody, `${currentRoute.operationId}_requestStruct`)
 
         currentRoute.validator.push(
           `  lDocument = JSON_ParseString(request.content.string);`,
@@ -90,7 +94,7 @@ function processDocument() {
           `    Endif;`,
           ``,
         );
-        parseBody(currentBody, 'lDocument');
+        generateAuth(currentBody, 'lDocument');
 
         currentRoute.validator.push(
           `  Endif;`,
@@ -109,7 +113,7 @@ function processDocument() {
     }
   }
 
-  function parseBody(object, variable, subobject) {
+  function generateAuth(object, variable, subobject) {
     console.log(object);
     var currentProperty;
     for (const name in object.properties) {
@@ -148,7 +152,7 @@ function processDocument() {
               ``,
             );
 
-            parseBody(currentProperty, variable, name);
+            generateAuth(currentProperty, variable, name);
           }
           break;
 
@@ -166,7 +170,7 @@ function processDocument() {
                 `    Dow json_ForEach(list);`,
               );
 
-              parseBody(currentProperty.items, `list.this`);
+              generateAuth(currentProperty.items, `list.this`);
   
               currentRoute.validator.push(
                 `    Enddo;`,
@@ -240,7 +244,56 @@ function generateBase() {
     );
   }
 
-  lines.push(`/copy ./${outputFile}`)
+  lines.push(`/copy ./validation.rpgle`)
 
   fs.writeFileSync(`${baseFile}`, lines.join('\n'));
+}
+
+function generateStructs() {
+  fs.writeFileSync(`${structsFile}`, structsContent.join('\n'));
+}
+
+function generateStruct(object, structName) {
+  const types = {
+    'number': `Packed(30:15)`,
+    'string': 'Pointer',
+    'boolean': 'Ind',
+    'integer': 'Int(20)'
+  };
+
+  var currentStruct = [];
+
+  currentStruct.push(`Dcl-Ds ${structName} Qualified Template;`);
+
+  var currentProperty;
+  for (const name in object.properties) {
+    currentProperty = object.properties[name];
+
+    switch (currentProperty.type) {
+      case 'number':
+      case 'string':
+      case 'boolean':
+      case 'integer':
+        currentStruct.push(`  ${name} ${types[currentProperty.type]};`);
+        break;
+
+      case 'object':
+        generateStruct(currentProperty, `${structName}_${name}`);
+        currentStruct.push(`  ${name} LikeDS(${structName}_${name});`);
+        break;
+
+      case 'array':
+        if (currentProperty.items.type === "object") {
+          generateStruct(currentProperty.items, `${structName}_${name}`);
+          currentStruct.push(`  ${name} LikeDS(${structName}_${name}) Dim(100);`);
+        } else {
+          currentStruct.push(`  ${name} ${types[currentProperty.items.type]} Dim(100);`);
+        }
+        break;
+    }
+  }
+  
+  currentStruct.push(`End-Ds;`, '');
+
+  structsContent.push(...currentStruct);
 }
