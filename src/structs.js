@@ -1,9 +1,10 @@
 const fs = require('fs');
+const path = require('path');
 var lines = [`**FREE`, ''];
 
 module.exports = class Structs {
   static write() {
-    fs.writeFileSync(`output/structs.rpgle`, lines.join('\n'));
+    fs.writeFileSync(path.join(process.outputDir, `structs.rpgle`), lines.join('\n'));
   }
 
   static generateStruct(object, structName) {

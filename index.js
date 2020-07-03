@@ -1,5 +1,6 @@
 const yaml = require('js-yaml');
 const fs = require('fs');
+const path = require('path');
 
 const Route = require('./src/route');
 const Base = require('./src/base');
@@ -7,13 +8,23 @@ const Structs = require('./src/structs');
 const Into = require('./src/into');
 const From = require('./src/from');
 
-const openapiDocument = process.argv[2] || "openapi.yaml"
-const outputFile = process.argv[3] || "output/validation.rpgle";
+const openapiDocument = "openapi.yaml"
+process.outputDir = "output";
 
 var document;
-
 var routes = [];
 
+for (var i = 2; i < process.argv.length; i++) {
+  switch (process.argv[i]) {
+    case '-i':
+      openapiDocument = process.argv[i + 1];
+      break;
+
+    case '-o':
+      process.outputDir = process.argv[i + 1];
+      break;
+  }
+}
 
 loadDocument();
 processDocument();
@@ -35,7 +46,6 @@ function loadDocument() {
 
 function processDocument() {
   var currentAPI, currentRoute, currentBody;
-  console.log(document);
 
   for (const path in document.paths) {
     for (const requestType in document.paths[path]) {
@@ -122,13 +132,11 @@ function processDocument() {
         }
       }
       
-      console.log(currentRoute.validator);
       routes.push(currentRoute);
     }
   }
 
   function generateAuth(object, variable, subobject) {
-    console.log(object);
     var currentProperty;
     for (const name in object.properties) {
       currentProperty = object.properties[name];
@@ -205,5 +213,5 @@ function generateValidator() {
     lines.push(...route.validator);
   }
 
-  fs.writeFileSync(`${outputFile}`, lines.join('\n'));
+  fs.writeFileSync(path.join(process.outputDir, `validation.rpgle`), lines.join('\n'));
 }

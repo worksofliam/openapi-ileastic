@@ -1,4 +1,5 @@
 const fs = require('fs');
+const path = require('path');
 
 module.exports = class Base {
 
@@ -54,6 +55,6 @@ module.exports = class Base {
   
     lines.push(`/copy ./validation.rpgle`, `/copy ./into.rpgle`, `/copy ./from.rpgle`);
   
-    fs.writeFileSync(`output/webapp.rpgle`, lines.join('\n'));
+    fs.writeFileSync(path.join(process.outputDir, `webapp.rpgle`), lines.join('\n'));
   }
 }

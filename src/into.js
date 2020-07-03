@@ -1,9 +1,10 @@
 const fs = require('fs');
+const path = require('path');
 var lines = [`**FREE`, ''];
 
 module.exports = class Into {
   static write() {
-    fs.writeFileSync("output/into.rpgle", lines.join('\n'));
+    fs.writeFileSync(path.join(process.outputDir, "into.rpgle"), lines.join('\n'));
   }
 
   static generateProcedure(object, structName) {
