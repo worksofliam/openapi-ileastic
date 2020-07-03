@@ -21,6 +21,10 @@ paths:
                     type: boolean
                   message:
                     type: string
+                  dataarray:
+                    type: array
+                    items:
+                      type: string
                   data:
                     type: array
                     items:
