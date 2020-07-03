@@ -6,18 +6,23 @@ const Route = require('./route');
 const openapiDocument = process.argv[2] || "openapi.yaml"
 const outputFile = process.argv[3] || "output/validation.rpgle";
 const baseFile = process.argv[4] || "output/webapp.rpgle";
-const structsFile = process.argv[5] || "output/structs.rpgle"
+
+const structsFile = process.argv[5] || "output/structs.rpgle";
+const intoStructsFile = process.argv[6] || "output/intoStructs.rpgle";
 
 var document;
 
 var routes = [];
 var structsContent = [`**FREE`, ''];
+var intoStructsContent = [`**FREE`, ''];
 
 loadDocument();
 processDocument();
-writeFile();
+generateValidator();
+
 generateBase();
 generateStructs();
+generateIntos();
 
 function loadDocument() {
   try {
@@ -78,7 +83,8 @@ function processDocument() {
 
       if (currentAPI.requestBody) {
         currentBody = currentAPI.requestBody.content['application/json'].schema;
-        generateStruct(currentBody, `${currentRoute.operationId}_requestStruct`)
+        generateStruct(currentBody, `${currentRoute.operationId}_requestStruct`);
+        getInto(currentBody, `${currentRoute.operationId}_requestStruct`);
 
         currentRoute.validator.push(
           `  lDocument = JSON_ParseString(request.content.string);`,
@@ -184,7 +190,7 @@ function processDocument() {
   }
 }
 
-function writeFile() {
+function generateValidator() {
   var lines = ['**FREE', ''];
 
   for (const route of routes) {
@@ -263,7 +269,7 @@ function generateStruct(object, structName) {
 
   var currentStruct = [];
 
-  currentStruct.push(`Dcl-Ds ${structName} Qualified Template;`);
+  currentStruct.push(`Dcl-Ds ${structName}_t Qualified Template;`);
 
   var currentProperty;
   for (const name in object.properties) {
@@ -279,13 +285,13 @@ function generateStruct(object, structName) {
 
       case 'object':
         generateStruct(currentProperty, `${structName}_${name}`);
-        currentStruct.push(`  ${name} LikeDS(${structName}_${name});`);
+        currentStruct.push(`  ${name} LikeDS(${structName}_${name}_t);`);
         break;
 
       case 'array':
         if (currentProperty.items.type === "object") {
           generateStruct(currentProperty.items, `${structName}_${name}`);
-          currentStruct.push(`  ${name} LikeDS(${structName}_${name}) Dim(100);`);
+          currentStruct.push(`  ${name} LikeDS(${structName}_${name}_t) Dim(100);`);
         } else {
           currentStruct.push(`  ${name} ${types[currentProperty.items.type]} Dim(100);`);
         }
@@ -296,4 +302,63 @@ function generateStruct(object, structName) {
   currentStruct.push(`End-Ds;`, '');
 
   structsContent.push(...currentStruct);
+}
+
+function generateIntos() {
+  fs.writeFileSync(intoStructsFile, intoStructsContent.join('\n'));
+}
+
+function getInto(object, structName) {
+  intoStructsContent.push(`Dcl-Proc into_${structName};`);
+  intoStructsContent.push(`  Dcl-Pi *N LikeDS(${structName}_t);`, `    pDocument Pointer;`, `  End-Pi;`, ``);
+  intoStructsContent.push(`  Dcl-DS ${structName} LikeDS(${structName}_t);`);
+  intoStructsContent.push(`  End-DS;`, ``);
+
+  getIntos(object, structName);
+
+  intoStructsContent.push(``, `  Return ${structName};`, `End-Proc;`, ``);
+}
+
+function getIntos(object, structName) {
+  const getTypes = {
+    'number': `GetNum`,
+    'string': 'GetStr',
+    'boolean': 'GetInd',
+    'integer': 'GetInt'
+  };
+
+  var currentProperty;
+  for (var name in object.properties) {
+    currentProperty = object.properties[name];
+
+    switch (currentProperty.type) {
+      case 'number':
+      case 'string':
+      case 'boolean':
+      case 'integer':
+        intoStructsContent.push(`  ${structName}.${name} = JSON_${getTypes[currentProperty.type]}(lDocument:'${name}');`);
+        break;
+
+      case 'object':
+        intoStructsContent.push('');
+        getIntos(currentProperty, structName + "." + name);
+        break;
+
+      case 'array':
+        intoStructsContent.push(
+          ``,
+          `  list = json_SetIterator(JSON_Locate(lDocument:'${name}'));`,
+          `  Dow json_ForEach(list);`,
+        );
+
+        if (currentProperty.items.type === "object") {
+          getIntos(currentProperty.items, `${structName}.${name}`);
+        } else {
+          intoStructsContent.push(`    ${structName}.${name}(list.count) = JSON_${getTypes[currentProperty.items.type]}(list.this);`);
+        }
+
+        intoStructsContent.push(`  Enddo;`);
+        break;
+    }
+  }
 }
