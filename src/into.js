@@ -11,7 +11,7 @@ module.exports = class Into {
     lines.push(`Dcl-Proc into_${structName};`);
     lines.push(`  Dcl-Pi *N LikeDS(${structName}_t);`, `    pDocument Pointer;`, `  End-Pi;`, ``);
     lines.push(`  Dcl-DS ${structName} LikeDS(${structName}_t);`);
-    lines.push(`  End-DS;`, ``);
+    lines.push(`  Dcl-DS list likeds(JSON_ITERATOR);`, ``);
   
     this.generateContents(object, structName);
   
@@ -21,7 +21,7 @@ module.exports = class Into {
   static generateContents(object, structName) {
     const getTypes = {
       'number': `GetNum`,
-      'string': 'GetStr',
+      'string': 'GetValuePtr',
       'boolean': 'GetInd',
       'integer': 'GetInt'
     };
@@ -35,7 +35,7 @@ module.exports = class Into {
         case 'string':
         case 'boolean':
         case 'integer':
-          lines.push(`  ${structName}.${name} = JSON_${getTypes[currentProperty.type]}(lDocument:'${name}');`);
+          lines.push(`  ${structName}.${name} = JSON_${getTypes[currentProperty.type]}(pDocument:'${name}');`);
           break;
   
         case 'object':
@@ -46,7 +46,7 @@ module.exports = class Into {
         case 'array':
           lines.push(
             ``,
-            `  list = json_SetIterator(JSON_Locate(lDocument:'${name}'));`,
+            `  list = json_SetIterator(JSON_Locate(pDocument:'${name}'));`,
             `  Dow json_ForEach(list);`,
           );
   

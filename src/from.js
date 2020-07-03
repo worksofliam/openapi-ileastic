@@ -10,9 +10,9 @@ module.exports = class From {
   static generateProcedure(object, structName) {
     lines.push(`Dcl-Proc from_${structName};`);
     lines.push(`  Dcl-Pi *N Pointer;`, `    ${structName} LikeDS(${structName}_t);`, `  End-Pi;`, ``);
-    lines.push(`  Dcl-DS lIndex Int(5);`);
-    lines.push(`  Dcl-DS lArray Pointer;`);
-    lines.push(`  Dcl-DS lDocument Pointer;`);
+    lines.push(`  Dcl-S lIndex Int(5);`);
+    lines.push(`  Dcl-S lArray Pointer;`);
+    lines.push(`  Dcl-S lDocument Pointer;`, '');
     lines.push(`  lDocument = JSON_NewObject();`);
   
     this.generateContents(object, structName);
@@ -24,7 +24,7 @@ module.exports = class From {
     const setTypes = {
       'number': `SetNum`,
       'string': 'SetStr',
-      'boolean': 'SetInd',
+      'boolean': 'SetBool',
       'integer': 'SetInt'
     };
   
