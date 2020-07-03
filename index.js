@@ -74,9 +74,8 @@ function processDocument() {
 
       if (currentAPI.requestBody) {
         currentBody = currentAPI.requestBody.content['application/json'].schema;
-        generateStruct(currentBody, `${currentRoute.operationId}_requestStruct`);
-        getInto(currentBody, `${currentRoute.operationId}_requestStruct`);
-        getOutOf(currentBody, `${currentRoute.operationId}_requestStruct`);
+        generateStruct(currentBody, `${currentRoute.operationId}_request`);
+        getInto(currentBody, `${currentRoute.operationId}_request`);
 
         currentRoute.validator.push(
           `  lDocument = JSON_ParseString(request.content.string);`,
@@ -99,6 +98,14 @@ function processDocument() {
           ``,
         );
 
+      }
+
+      if (currentAPI.responses) {
+        for (const code in currentAPI.responses) {
+          currentBody = currentAPI.responses[code].content['application/json'].schema;
+          generateStruct(currentBody, `${currentRoute.operationId}_${code}_response`);
+          getOutOf(currentBody, `${currentRoute.operationId}_${code}_response`);
+        }
       }
 
       currentRoute.validator.push(
@@ -283,6 +290,7 @@ function generateStruct(object, structName) {
         break;
 
       case 'array':
+        currentStruct.push(`  ${name}_len Uns(5);`);
         if (currentProperty.items.type === "object") {
           generateStruct(currentProperty.items, `${structName}_${name}`);
           currentStruct.push(`  ${name} LikeDS(${structName}_${name}_t) Dim(100);`);
@@ -367,7 +375,7 @@ function generateOutofStructs() {
 }
 
 function getOutOf(object, structName) {
-  outofStructsContent.push(`Dcl-Proc into_${structName};`);
+  outofStructsContent.push(`Dcl-Proc from_${structName};`);
   outofStructsContent.push(`  Dcl-Pi *N Pointer;`, `    ${structName} LikeDS(${structName}_t);`, `  End-Pi;`, ``);
   outofStructsContent.push(`  Dcl-DS lIndex Int(5);`);
   outofStructsContent.push(`  Dcl-DS lArray Pointer;`);
@@ -407,7 +415,7 @@ function getOutOfs(object, structName) {
       case 'array':
         outofStructsContent.push(
           ``,
-          `  For lIndex = 1 to %Elem(${structName}.${name});`,
+          `  For lIndex = 1 to ${structName}.${name}_len;`,
         );
 
         if (currentProperty.items.type === "object") {

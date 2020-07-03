@@ -9,7 +9,27 @@ paths:
     post:
       summary: Your GET endpoint
       tags: []
-      responses: {}
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: number
+                        message:
+                          type: string
       operationId: post-searchAPI
       requestBody:
         content:
@@ -46,7 +66,10 @@ paths:
                 - age
                 - list
                 - data
+            examples:
+              example-1: {}
         description: ''
+      parameters: []
   /user:
     get:
       summary: Your GET endpoint
