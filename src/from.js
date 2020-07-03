@@ -57,10 +57,11 @@ module.exports = class From {
             );
 
             this.generateContents(currentProperty.items, `${structName}.${name}(lIndex)`, `lObject`);
+            
             lines.push(
               `    JSON_ArrayPush(lArray:lObject);`,
               `  Endfor;`,
-              `  JSON_SetPtr(${variable}:'${name}':lArray);`
+              `  json_SetValue(${variable}:'${name}':lArray:JSON_ARRAY);`
             );
           } else {
             
