@@ -9,20 +9,11 @@ const baseFile = process.argv[4] || "output/webapp.rpgle";
 
 const structsFile = process.argv[5] || "output/structs.rpgle";
 const intoStructsFile = process.argv[6] || "output/intoStructs.rpgle";
+const outOfStructsFile = process.argv[7] || "output/outofStructs.rpgle";
 
 var document;
 
 var routes = [];
-var structsContent = [`**FREE`, ''];
-var intoStructsContent = [`**FREE`, ''];
-
-loadDocument();
-processDocument();
-generateValidator();
-
-generateBase();
-generateStructs();
-generateIntos();
 
 function loadDocument() {
   try {
@@ -85,6 +76,7 @@ function processDocument() {
         currentBody = currentAPI.requestBody.content['application/json'].schema;
         generateStruct(currentBody, `${currentRoute.operationId}_requestStruct`);
         getInto(currentBody, `${currentRoute.operationId}_requestStruct`);
+        getOutOf(currentBody, `${currentRoute.operationId}_requestStruct`);
 
         currentRoute.validator.push(
           `  lDocument = JSON_ParseString(request.content.string);`,
@@ -255,6 +247,8 @@ function generateBase() {
   fs.writeFileSync(`${baseFile}`, lines.join('\n'));
 }
 
+var structsContent = [`**FREE`, ''];
+
 function generateStructs() {
   fs.writeFileSync(`${structsFile}`, structsContent.join('\n'));
 }
@@ -303,6 +297,9 @@ function generateStruct(object, structName) {
 
   structsContent.push(...currentStruct);
 }
+
+
+var intoStructsContent = [`**FREE`, ''];
 
 function generateIntos() {
   fs.writeFileSync(intoStructsFile, intoStructsContent.join('\n'));
@@ -362,3 +359,74 @@ function getIntos(object, structName) {
     }
   }
 }
+
+var outofStructsContent = [`**FREE`, ''];
+
+function generateOutofStructs() {
+  fs.writeFileSync(outOfStructsFile, outofStructsContent.join('\n'));
+}
+
+function getOutOf(object, structName) {
+  outofStructsContent.push(`Dcl-Proc into_${structName};`);
+  outofStructsContent.push(`  Dcl-Pi *N Pointer;`, `    ${structName} LikeDS(${structName}_t);`, `  End-Pi;`, ``);
+  outofStructsContent.push(`  Dcl-DS lIndex Int(5);`);
+  outofStructsContent.push(`  Dcl-DS lArray Pointer;`);
+  outofStructsContent.push(`  Dcl-DS lDocument Pointer;`);
+  outofStructsContent.push(`  lDocument = JSON_NewObject();`);
+
+  getOutOfs(object, structName);
+
+  outofStructsContent.push(``, `  Return lDocument;`, `End-Proc;`, ``);
+}
+
+function getOutOfs(object, structName) {
+  const setTypes = {
+    'number': `SetNum`,
+    'string': 'SetStr',
+    'boolean': 'SetInd',
+    'integer': 'SetInt'
+  };
+
+  var currentProperty;
+  for (var name in object.properties) {
+    currentProperty = object.properties[name];
+
+    switch (currentProperty.type) {
+      case 'number':
+      case 'string':
+      case 'boolean':
+      case 'integer':
+        outofStructsContent.push(`  JSON_${setTypes[currentProperty.type]}(lDocument:'${name}':${structName}.${name});`);
+        break;
+
+      case 'object':
+        outofStructsContent.push('');
+        getOutOfs(currentProperty, structName + "." + name);
+        break;
+
+      case 'array':
+        outofStructsContent.push(
+          ``,
+          `  For lIndex = 1 to %Elem(${structName}.${name});`,
+        );
+
+        if (currentProperty.items.type === "object") {
+          getOutOfs(currentProperty.items, `${structName}.${name}`);
+        } else {
+          outofStructsContent.push(`    JSON_${setTypes[currentProperty.items.type]}(${structName}.${name}:'[]':${structName}.${name});`);
+        }
+
+        outofStructsContent.push(`  Endfor;`);
+        break;
+    }
+  }
+}
+
+loadDocument();
+processDocument();
+generateValidator();
+
+generateBase();
+generateStructs();
+generateIntos();
+generateOutofStructs();
